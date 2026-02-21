@@ -23,6 +23,7 @@ export const ENDPOINTS = {
         search: `${API_BASE_URL}/files/search`,
         starred: `${API_BASE_URL}/files/starred`,
         get: (fileId: string) => `${API_BASE_URL}/files/${fileId}`,
+        metadata: (fileId: string) => `${API_BASE_URL}/files/${fileId}/metadata`,
         delete: (fileId: string) => `${API_BASE_URL}/files/${fileId}`,
         restore: (fileId: string) => `${API_BASE_URL}/files/${fileId}/restore`,
         permanentDelete: (fileId: string) => `${API_BASE_URL}/files/${fileId}/permanent`,

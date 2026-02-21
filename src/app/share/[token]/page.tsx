@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { useParams } from "next/navigation"
 import { FileItem } from "@/store/fileStore"
 import { motion } from "framer-motion"
-import { Download, AlertCircle, FileIcon } from "lucide-react"
+import { Download, AlertCircle, FileIcon, AudioLines } from "lucide-react"
 
 export default function SharedFilePage() {
     const params = useParams()
@@ -62,8 +62,9 @@ export default function SharedFilePage() {
     const { file, download_url, preview_url } = fileData
 
     // Helpers to render the file inline based on type
-    const isImage = file.type?.includes("jpg") || file.type?.includes("png") || file.type?.includes("svg") || file.type?.includes("image")
+    const isImage = file.type?.includes("jpg") || file.type?.includes("png") || file.type?.includes("webp") || file.type?.includes("svg") || file.type?.includes("image")
     const isVideo = file.type?.includes("mp4") || file.type?.includes("video")
+    const isAudio = file.type?.includes("mp3") || file.type?.includes("audio")
     const isPdfOrText = file.type?.includes("pdf") || file.type?.includes("text")
 
     return (
@@ -77,6 +78,11 @@ export default function SharedFilePage() {
                 ) : isVideo ? (
                     <div className="w-full h-full bg-black flex items-center justify-center">
                         <video src={preview_url} controls className="w-full h-full object-contain outline-none" />
+                    </div>
+                ) : isAudio ? (
+                    <div className="w-full h-full bg-black/5 dark:bg-black/40 flex flex-col items-center justify-center">
+                        <AudioLines className="w-24 h-24 text-blue-500 mb-8" />
+                        <audio src={preview_url} controls className="w-full max-w-md outline-none" />
                     </div>
                 ) : isPdfOrText ? (
                     <iframe src={preview_url} className="w-full h-full border-none bg-white" title={file.name} />
