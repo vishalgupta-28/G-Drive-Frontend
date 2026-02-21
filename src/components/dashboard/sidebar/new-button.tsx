@@ -9,17 +9,14 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { NewFolderDialog } from "@/components/dashboard/dialogs/new-folder-dialog"
 import { useFolderStore } from "@/store/folderStore"
 import { toast } from "sonner"
 import axios from "axios"
 import { postRequest } from "@/server/methods"
 import { ENDPOINTS } from "@/server/endpoint"
 import { useUploadStore } from "@/store/uploadStore"
-
 export function NewButton() {
-    const [isNewFolderOpen, setIsNewFolderOpen] = React.useState(false)
-    const { createFolder, currentFolderId } = useFolderStore()
+    const { currentFolderId } = useFolderStore()
     const { addUpload, updateProgress, updateStatus } = useUploadStore()
     const fileInputRef = React.useRef<HTMLInputElement>(null)
 
@@ -79,19 +76,6 @@ export function NewButton() {
         }
     }
 
-    const handleCreateFolder = async (name: string) => {
-        try {
-            await createFolder(name, currentFolderId)
-            toast.success("Folder created", {
-                description: `Successfully created "${name}"`
-            })
-        } catch (error) {
-            console.error("Failed to create folder:", error)
-            // The API methods throw the error and naturally show an error toast 
-            // but we can log it here or handle specific UI states if needed.
-        }
-    }
-
     return (
         <>
             <div className="px-1 pb-4 pt-1">
@@ -111,18 +95,6 @@ export function NewButton() {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent className="w-[200px] rounded-[8px] p-0 py-[6px] bg-white dark:bg-[#282a2c] border border-[#d2d2d2] dark:border-[#444746] shadow-md text-[#1f1f1f] dark:text-[#c4c7c5] ml-4 mt-2" align="start">
                         <DropdownMenuItem
-                            onClick={() => setIsNewFolderOpen(true)}
-                            className="h-[36px] px-[14px] cursor-pointer focus:bg-[#f0f4f9] dark:focus:bg-[#333333] border-none outline-none rounded-none"
-                        >
-                            <div className="flex items-center w-full">
-                                <FolderPlus className="mr-3 h-[18px] w-[18px] text-[#444746] dark:text-[#c4c7c5] stroke-[1.5]" />
-                                <span className="text-[13px] flex-1 text-[#1f1f1f] dark:text-[#e3e3e3]">New folder</span>
-                            </div>
-                        </DropdownMenuItem>
-
-                        <DropdownMenuSeparator className="bg-[#e0e0e0] dark:bg-[#444746] my-[4px]" />
-
-                        <DropdownMenuItem
                             onClick={() => fileInputRef.current?.click()}
                             className="h-[36px] px-[14px] cursor-pointer focus:bg-[#f0f4f9] dark:focus:bg-[#333333] border-none outline-none rounded-none"
                         >
@@ -134,12 +106,6 @@ export function NewButton() {
                     </DropdownMenuContent>
                 </DropdownMenu>
             </div>
-
-            <NewFolderDialog
-                open={isNewFolderOpen}
-                onOpenChange={setIsNewFolderOpen}
-                onCreate={handleCreateFolder}
-            />
         </>
     )
 }
