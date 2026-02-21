@@ -11,6 +11,7 @@ export interface FileItem {
     size: number;
     type: string;
     created_at: string;
+    is_starred: boolean;
     thumbnail_url: string | null;
 }
 
@@ -30,14 +31,26 @@ interface FileState {
     closePreview: () => void;
 
     // Sharing State
+    checkShareLink: (fileId: string) => Promise<string | null>;
     generateShareLink: (fileId: string) => Promise<string | null>;
     revokeShareLink: (fileId: string) => Promise<void>;
+
+    // Renaming State
+    renameFile: (fileId: string, newName: string) => Promise<void>;
+
+    // Search State
+    searchQuery: string;
+    setSearchQuery: (query: string) => void;
+    searchFiles: (query: string) => Promise<void>;
 }
 
 export const useFileStore = create<FileState>((set) => ({
     files: [],
     isLoading: false,
     error: null,
+    searchQuery: '',
+
+    setSearchQuery: (query: string) => set({ searchQuery: query }),
 
     fetchFiles: async (folderId = null) => {
         set({ isLoading: true, error: null });
@@ -60,6 +73,7 @@ export const useFileStore = create<FileState>((set) => ({
         }
     },
 
+
     moveToTrash: async (fileId: string) => {
         try {
             const { deleteRequest } = await import('../server/methods');
@@ -79,7 +93,7 @@ export const useFileStore = create<FileState>((set) => ({
         set({ activePreviewFile: file, previewUrl: null }); // Show modal immediately with loading state
         try {
             const response: any = await getRequest(ENDPOINTS.files.get(file.id));
-            set({ previewUrl: response.download_url });
+            set({ previewUrl: response.preview_url });
         } catch (error) {
             console.error("Failed to load file preview", error);
         }
@@ -118,11 +132,44 @@ export const useFileStore = create<FileState>((set) => ({
         }
     },
 
+    checkShareLink: async (fileId: string) => {
+        try {
+            const data: any = await getRequest(ENDPOINTS.files.checkShare(fileId));
+            return data.isShared ? data.shareUrl : null;
+        } catch (error) {
+            console.error("Failed to check share status:", error);
+            return null;
+        }
+    },
+
     revokeShareLink: async (fileId: string) => {
         try {
             await deleteRequest(ENDPOINTS.files.share(fileId));
         } catch (error) {
             console.error("Failed to revoke share:", error);
+        }
+    },
+
+    renameFile: async (fileId: string, newName: string) => {
+        try {
+            const { patchRequest } = await import('../server/methods');
+            await patchRequest(`${ENDPOINTS.files.rename(fileId)}?newname=${encodeURIComponent(newName)}`);
+            set((state) => ({
+                files: state.files.map(f => f.id === fileId ? { ...f, name: newName } : f)
+            }));
+        } catch (error: any) {
+            console.error("Failed to rename file:", error);
+            throw error; // Let caller handle UI errors
+        }
+    },
+
+    searchFiles: async (query: string) => {
+        set({ isLoading: true, error: null });
+        try {
+            const response = await getRequest(`${ENDPOINTS.files.search}?querystring=${encodeURIComponent(query)}`);
+            set({ files: response as unknown as FileItem[], isLoading: false });
+        } catch (error: any) {
+            set({ error: error.message, isLoading: false, files: [] });
         }
     }
 }));

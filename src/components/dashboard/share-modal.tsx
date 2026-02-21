@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { X, Copy, Check, Link as LinkIcon, AlertCircle, HelpCircle, Settings, Lock, Globe } from "lucide-react"
 import { useFileStore, FileItem } from "@/store/fileStore"
@@ -12,12 +12,34 @@ interface ShareModalProps {
 }
 
 export function ShareModal({ file, isOpen, onClose }: ShareModalProps) {
-    const { generateShareLink, revokeShareLink } = useFileStore()
+    const { generateShareLink, revokeShareLink, checkShareLink } = useFileStore()
     const [shareUrl, setShareUrl] = useState<string | null>(null)
     const [isGenerating, setIsGenerating] = useState(false)
+    const [isChecking, setIsChecking] = useState(false)
     const [isRevoking, setIsRevoking] = useState(false)
     const [copied, setCopied] = useState(false)
     const [error, setError] = useState<string | null>(null)
+
+    useEffect(() => {
+        if (isOpen) {
+            let mounted = true;
+            const checkStatus = async () => {
+                setIsChecking(true);
+                setError(null);
+                setShareUrl(null);
+                const url = await checkShareLink(file.id);
+                if (mounted) {
+                    setShareUrl(url);
+                    setIsChecking(false);
+                }
+            };
+            checkStatus();
+            return () => { mounted = false; };
+        } else {
+            setShareUrl(null);
+            setError(null);
+        }
+    }, [isOpen, file.id, checkShareLink]);
 
     const handleGenerate = async () => {
         setIsGenerating(true)
@@ -84,14 +106,6 @@ export function ShareModal({ file, isOpen, onClose }: ShareModalProps) {
                 >
                     <div className="flex items-start justify-between">
                         <h2 className="text-[22px] font-normal text-[#1f1f1f] dark:text-[#e3e3e3] pr-4 leading-[28px]">Share "{file.name}"</h2>
-                        <div className="flex items-center gap-2">
-                            <button className="p-[6px] rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors text-[#444746] dark:text-[#c4c7c5]">
-                                <HelpCircle className="w-6 h-6 stroke-[1.5]" />
-                            </button>
-                            <button className="p-[6px] rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors text-[#444746] dark:text-[#c4c7c5]">
-                                <Settings className="w-6 h-6 stroke-[1.5]" />
-                            </button>
-                        </div>
                     </div>
 
                     <div className="space-y-6">
@@ -102,79 +116,74 @@ export function ShareModal({ file, isOpen, onClose }: ShareModalProps) {
                             </div>
                         )}
 
-                        {!shareUrl ? (
-                            <div>
-                                <h3 className="text-[16px] font-medium text-[#1f1f1f] dark:text-[#e3e3e3] mb-4">General access</h3>
-                                <div className="flex items-start gap-4">
-                                    <div className="p-2 bg-gray-100 dark:bg-[#333333] rounded-full shrink-0">
-                                        <Lock className="w-5 h-5 text-[#444746] dark:text-[#c4c7c5]" />
-                                    </div>
-                                    <div className="flex-1">
-                                        <div className="flex items-center justify-between">
-                                            <div>
-                                                <div className="text-[14px] font-medium text-[#1f1f1f] dark:text-[#e3e3e3]">Restricted</div>
-                                                <div className="text-[14px] text-[#444746] dark:text-[#c4c7c5] mt-[2px]">Only people with access can open with the link</div>
+                        {isChecking ? (
+                            <div className="flex flex-col items-center justify-center py-8">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0b57d0] dark:border-[#a8c7fa]"></div>
+                                <p className="text-[13px] text-[#444746] dark:text-[#c4c7c5] mt-4">Checking share status...</p>
+                            </div>
+                        ) : !shareUrl ? (
+                            <div className="flex flex-col items-center justify-center py-6">
+                                <button
+                                    onClick={handleGenerate}
+                                    disabled={isGenerating}
+                                    className="flex items-center gap-2 px-6 py-[12px] bg-[#0b57d0] hover:bg-blue-800 text-white text-[15px] font-medium rounded-full transition-colors disabled:opacity-50"
+                                >
+                                    <LinkIcon className="w-[18px] h-[18px]" />
+                                    {isGenerating ? "Generating..." : "Generate link"}
+                                </button>
+                                <p className="text-[13px] text-[#444746] dark:text-[#c4c7c5] mt-4 text-center">
+                                    Only people with the generated link will be able to access this file.
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="flex flex-col gap-4">
+                                <div>
+                                    <h3 className="text-[16px] font-medium text-[#1f1f1f] dark:text-[#e3e3e3] mb-4">General access</h3>
+                                    <div className="flex items-start gap-4">
+                                        <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-full shrink-0">
+                                            <Globe className="w-6 h-6 text-green-700 dark:text-green-400" />
+                                        </div>
+                                        <div className="flex-1">
+                                            <div className="text-[15px] font-medium text-[#1f1f1f] dark:text-[#e3e3e3]">Anyone with the link</div>
+                                            <div className="text-[14px] text-[#444746] dark:text-[#c4c7c5] mt-[2px]">Anyone on the internet with the link can view</div>
+                                            <div className="flex items-center gap-2 mt-4">
+                                                <input
+                                                    type="text"
+                                                    readOnly
+                                                    value={shareUrl}
+                                                    className="flex-1 bg-[#f0f4f9] dark:bg-[#1e1f20] p-[10px] rounded-[8px] border border-gray-300 dark:border-gray-600 focus:border-[#0b57d0] dark:focus:border-blue-500 text-[14px] text-[#1f1f1f] dark:text-[#e3e3e3] outline-none select-all"
+                                                />
+                                                <button
+                                                    onClick={copyToClipboard}
+                                                    className="flex items-center gap-2 px-4 py-[10px] shrink-0 bg-[#f0f4f9] dark:bg-[#1e1f20] hover:bg-gray-200 dark:hover:bg-gray-700 text-[#1f1f1f] dark:text-[#e3e3e3] text-[14px] font-medium rounded-[8px] transition-colors border border-gray-300 dark:border-gray-600"
+                                                >
+                                                    {copied ? <Check className="w-[16px] h-[16px]" /> : <Copy className="w-[16px] h-[16px]" />}
+                                                    {copied ? "Copied" : "Copy"}
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        ) : (
-                            <div>
-                                <h3 className="text-[16px] font-medium text-[#1f1f1f] dark:text-[#e3e3e3] mb-4">General access</h3>
-                                <div className="flex items-start gap-4">
-                                    <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-full shrink-0">
-                                        <Globe className="w-5 h-5 text-green-700 dark:text-green-400" />
-                                    </div>
-                                    <div className="flex-1">
-                                        <div className="text-[14px] font-medium text-[#1f1f1f] dark:text-[#e3e3e3]">Anyone with the link</div>
-                                        <div className="text-[14px] text-[#444746] dark:text-[#c4c7c5] mt-[2px]">Anyone on the internet with the link can view</div>
-                                        <input
-                                            type="text"
-                                            readOnly
-                                            value={shareUrl}
-                                            className="mt-3 w-full bg-[#f0f4f9] dark:bg-[#1e1f20] p-2 rounded text-[13px] text-[#1f1f1f] dark:text-[#e3e3e3] outline-none"
-                                        />
-                                    </div>
+
+                                {/* Bottom Action Strip */}
+                                <div className="flex items-center justify-between pt-6 mt-2 border-t border-gray-200 dark:border-gray-800">
+                                    <button
+                                        onClick={handleRevoke}
+                                        disabled={isRevoking}
+                                        className="px-5 py-[10px] bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/40 text-[14px] font-medium rounded-full transition-colors disabled:opacity-50"
+                                    >
+                                        {isRevoking ? "Revoking..." : "Revoke link"}
+                                    </button>
+
+                                    <button
+                                        onClick={onClose}
+                                        className="px-6 py-[10px] bg-[#0b57d0] hover:bg-blue-800 text-white text-[14px] font-medium rounded-full transition-colors"
+                                    >
+                                        Done
+                                    </button>
                                 </div>
                             </div>
                         )}
-                    </div>
-
-                    <div className="flex items-center justify-between pt-2">
-                        {!shareUrl ? (
-                            <button
-                                onClick={handleGenerate}
-                                disabled={isGenerating}
-                                className="flex items-center gap-2 px-5 py-[10px] bg-transparent border border-gray-300 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-blue-900/10 text-[#0b57d0] dark:text-[#a8c7fa] text-[14px] font-medium rounded-full transition-colors disabled:opacity-50"
-                            >
-                                <LinkIcon className="w-[18px] h-[18px]" />
-                                {isGenerating ? "Generating..." : "Copy link"}
-                            </button>
-                        ) : (
-                            <div className="flex items-center gap-2">
-                                <button
-                                    onClick={copyToClipboard}
-                                    className="flex items-center gap-2 px-5 py-[10px] bg-transparent border border-gray-300 dark:border-gray-600 hover:bg-blue-50 dark:hover:bg-blue-900/10 text-[#0b57d0] dark:text-[#a8c7fa] text-[14px] font-medium rounded-full transition-colors"
-                                >
-                                    {copied ? <Check className="w-[18px] h-[18px]" /> : <LinkIcon className="w-[18px] h-[18px]" />}
-                                    {copied ? "Link copied" : "Copy link"}
-                                </button>
-                                <button
-                                    onClick={handleRevoke}
-                                    disabled={isRevoking}
-                                    className="px-4 py-[10px] bg-transparent text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 text-[14px] font-medium rounded-full transition-colors disabled:opacity-50"
-                                >
-                                    {isRevoking ? "Revoking..." : "Remove access"}
-                                </button>
-                            </div>
-                        )}
-                        <button
-                            onClick={onClose}
-                            className="px-6 py-[10px] bg-[#0b57d0] hover:bg-blue-800 text-white text-[14px] font-medium rounded-full transition-colors"
-                        >
-                            Done
-                        </button>
                     </div>
                 </motion.div>
             </div>

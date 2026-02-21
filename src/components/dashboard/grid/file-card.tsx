@@ -2,7 +2,7 @@
 
 import {
     MoreVertical, Move, Download, Pencil, Copy,
-    ListChecks, AudioLines, UserPlus, Folder, Info, Trash2, ChevronRight
+    ListChecks, AudioLines, UserPlus, Folder, Info, Trash2, ChevronRight, Star
 } from "lucide-react"
 import { motion, Variants } from "framer-motion"
 
@@ -15,8 +15,19 @@ import {
 } from "@/components/ui/dropdown-menu"
 
 import { useFileStore, FileItem } from "@/store/fileStore"
+import { useStarredStore } from "@/store/starredStore"
 import { useState } from "react"
 import { ShareModal } from "../share-modal"
+
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
 
 export type FileType = "pdf" | "text" | "image" | "video" | "unknown"
 
@@ -28,6 +39,7 @@ export interface FileCardProps {
     isTrash?: boolean
     onDelete?: (id: string) => void
     onRestore?: (id: string) => void
+    is_starred?: boolean
     file: FileItem // Full original FileItem for the preview store
 }
 
@@ -66,9 +78,31 @@ const itemVariants: Variants = {
     })
 }
 
-export function FileCard({ id, name, type, previewUrl, isTrash, onDelete, onRestore, file }: FileCardProps) {
-    const { openPreview, downloadFile } = useFileStore()
+export function FileCard({ id, name, type, previewUrl, isTrash, onDelete, onRestore, is_starred, file }: FileCardProps) {
+    const { openPreview, downloadFile, renameFile } = useFileStore()
+    const { toggleStar } = useStarredStore()
     const [isShareModalOpen, setIsShareModalOpen] = useState(false)
+
+    // Rename Modal State
+    const [isRenameModalOpen, setIsRenameModalOpen] = useState(false)
+    const [editedName, setEditedName] = useState(name)
+    const [isRenaming, setIsRenaming] = useState(false)
+
+    const handleRename = async () => {
+        if (!editedName.trim() || editedName === name) {
+            setIsRenameModalOpen(false)
+            return
+        }
+        try {
+            setIsRenaming(true)
+            await renameFile(id, editedName)
+            setIsRenameModalOpen(false)
+        } catch (error) {
+            console.error("Failed to rename file", error)
+        } finally {
+            setIsRenaming(false)
+        }
+    }
     return (
         <>
             <div
@@ -84,9 +118,12 @@ export function FileCard({ id, name, type, previewUrl, isTrash, onDelete, onRest
                 <div className="flex items-center justify-between px-4 pt-3 pb-2 h-[48px]">
                     <div className="flex items-center gap-3 overflow-hidden">
                         {getFileIcon(type)}
-                        <span className="text-[14px] font-medium text-[#1f1f1f] dark:text-[#e3e3e3] truncate max-w-[160px]">
+                        <span className="text-[14px] font-medium text-[#1f1f1f] dark:text-[#e3e3e3] truncate max-w-[140px]">
                             {name}
                         </span>
+                        {is_starred && (
+                            <Star className="w-3.5 h-3.5 fill-[#1f1f1f] dark:fill-[#e3e3e3] text-[#1f1f1f] dark:text-[#e3e3e3] ml-1 shrink-0" />
+                        )}
                     </div>
 
                     <DropdownMenu>
@@ -97,11 +134,37 @@ export function FileCard({ id, name, type, previewUrl, isTrash, onDelete, onRest
                         </DropdownMenuTrigger>
                         <DropdownMenuContent onClick={(e) => e.stopPropagation()} className="w-[260px] rounded-[12px] p-0 py-2 bg-white dark:bg-[#282a2c] border-none shadow-lg text-[#1f1f1f] dark:text-[#c4c7c5]" side="right" align="start" sideOffset={8}>
 
-                            <DropdownMenuItem asChild className="h-[34px] px-3 rounded-none cursor-pointer focus:bg-[#f0f4f9] dark:focus:bg-[#333333] border-none outline-none">
-                                <motion.div custom={0} initial="hidden" animate="visible" variants={itemVariants}>
+                            <DropdownMenuItem
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (!isTrash) {
+                                        openPreview(file);
+                                    }
+                                }}
+                                className="h-[34px] px-3 rounded-none cursor-pointer focus:bg-[#f0f4f9] dark:focus:bg-[#333333] border-none outline-none"
+                            >
+                                <motion.div custom={0} initial="hidden" animate="visible" variants={itemVariants} className="flex items-center w-full">
                                     <Move className="mr-[14px] h-[16px] w-[16px] text-[#444746] dark:text-[#c4c7c5]" />
-                                    <span className="text-[13px] flex-1">Open with</span>
-                                    <ChevronRight className="h-[16px] w-[16px] text-[#444746] dark:text-[#c4c7c5]" />
+                                    <span className="text-[13px] flex-1">Open</span>
+                                </motion.div>
+                            </DropdownMenuItem>
+
+                            <DropdownMenuSeparator className="bg-[#c4c7c5] dark:bg-[#444746] opacity-30 my-[4px]" />
+
+                            <DropdownMenuItem
+                                onClick={async (e) => {
+                                    e.stopPropagation();
+                                    try {
+                                        await toggleStar(id, !is_starred);
+                                    } catch (err) {
+                                        console.error(err);
+                                    }
+                                }}
+                                className="h-[34px] px-3 rounded-none cursor-pointer focus:bg-[#f0f4f9] dark:focus:bg-[#333333]"
+                            >
+                                <motion.div custom={0.5} initial="hidden" animate="visible" variants={itemVariants} className="flex items-center w-full">
+                                    <Star className={`mr-[14px] h-[16px] w-[16px] text-[#444746] dark:text-[#c4c7c5] ${is_starred ? 'fill-current' : ''}`} />
+                                    <span className="text-[13px] flex-1">{is_starred ? "Remove from starred" : "Add to starred"}</span>
                                 </motion.div>
                             </DropdownMenuItem>
 
@@ -122,7 +185,14 @@ export function FileCard({ id, name, type, previewUrl, isTrash, onDelete, onRest
 
                             {!isTrash ? (
                                 <>
-                                    <DropdownMenuItem asChild className="h-[34px] px-3 rounded-none pointer-events-none opacity-50">
+                                    <DropdownMenuItem
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setEditedName(name); // Reset state to current name
+                                            setIsRenameModalOpen(true);
+                                        }}
+                                        className="h-[34px] px-3 rounded-none cursor-pointer focus:bg-[#f0f4f9] dark:focus:bg-[#333333]"
+                                    >
                                         <motion.div custom={2} initial="hidden" animate="visible" variants={itemVariants} className="flex items-center w-full">
                                             <Pencil className="mr-[14px] h-[16px] w-[16px] text-[#444746] dark:text-[#c4c7c5]" />
                                             <span className="text-[13px] flex-1">Rename</span>
@@ -215,6 +285,37 @@ export function FileCard({ id, name, type, previewUrl, isTrash, onDelete, onRest
                 isOpen={isShareModalOpen}
                 onClose={() => setIsShareModalOpen(false)}
             />
+
+            {/* Rename Modal */}
+            <Dialog open={isRenameModalOpen} onOpenChange={setIsRenameModalOpen}>
+                <DialogContent onClick={(e) => e.stopPropagation()} className="sm:max-w-[425px]">
+                    <DialogHeader>
+                        <DialogTitle>Rename file</DialogTitle>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <Input
+                            id="name"
+                            value={editedName}
+                            onChange={(e) => setEditedName(e.target.value)}
+                            className="col-span-3"
+                            autoFocus
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                    handleRename();
+                                }
+                            }}
+                        />
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsRenameModalOpen(false)} disabled={isRenaming}>
+                            Cancel
+                        </Button>
+                        <Button onClick={handleRename} disabled={isRenaming}>
+                            {isRenaming ? "Saving..." : "Save"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </>
     )
 }

@@ -19,7 +19,7 @@ function mapDbTypeToFileType(dbType: string): FileType {
 
 export default function DashboardPage() {
     const { folders, fetchFolders, isLoading, error } = useFolderStore()
-    const { files, fetchFiles, isLoading: filesLoading, error: filesError, moveToTrash } = useFileStore()
+    const { files, fetchFiles, isLoading: filesLoading, error: filesError, moveToTrash, searchQuery } = useFileStore()
     const currentFolderId = useFolderStore(s => s.currentFolderId)
     const uploads = useUploadStore(s => s.uploads)
 
@@ -38,7 +38,7 @@ export default function DashboardPage() {
 
     return (
         <div className="flex-1 p-6 h-full bg-[#FFFFFF] dark:bg-black/70 rounded-lg overflow-y-auto">
-            {(isLoading || error || folders.length > 0) && (
+            {!searchQuery && (isLoading || error || folders.length > 0) && (
                 <div className="mb-8 relative min-h-[100px]">
                     <h2 className="text-[14px] font-medium text-foreground mb-4">Folders</h2>
 
