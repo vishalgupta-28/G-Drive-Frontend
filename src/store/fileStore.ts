@@ -42,6 +42,9 @@ interface FileState {
     searchQuery: string;
     setSearchQuery: (query: string) => void;
     searchFiles: (query: string) => Promise<void>;
+
+    // Individual file update
+    updateFileThumbnail: (fileId: string, thumbnailUrl: string) => void;
 }
 
 export const useFileStore = create<FileState>((set) => ({
@@ -171,5 +174,13 @@ export const useFileStore = create<FileState>((set) => ({
         } catch (error: any) {
             set({ error: error.message, isLoading: false, files: [] });
         }
+    },
+
+    updateFileThumbnail: (fileId: string, thumbnailUrl: string) => {
+        set((state) => ({
+            files: state.files.map((file) =>
+                file.id === fileId ? { ...file, thumbnail_url: thumbnailUrl } : file
+            )
+        }));
     }
 }));

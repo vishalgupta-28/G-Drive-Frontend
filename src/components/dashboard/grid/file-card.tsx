@@ -16,8 +16,10 @@ import {
 
 import { useFileStore, FileItem } from "@/store/fileStore"
 import { useStarredStore } from "@/store/starredStore"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { ShareModal } from "../share-modal"
+import { ENDPOINTS } from "@/server/endpoint"
+import { getRequest } from "@/server/methods"
 
 import {
     Dialog,
@@ -79,7 +81,7 @@ const itemVariants: Variants = {
 }
 
 export function FileCard({ id, name, type, previewUrl, isTrash, onDelete, onRestore, is_starred, file }: FileCardProps) {
-    const { openPreview, downloadFile, renameFile } = useFileStore()
+    const { openPreview, downloadFile, renameFile, updateFileThumbnail } = useFileStore()
     const { toggleStar } = useStarredStore()
     const [isShareModalOpen, setIsShareModalOpen] = useState(false)
 
@@ -103,6 +105,46 @@ export function FileCard({ id, name, type, previewUrl, isTrash, onDelete, onRest
             setIsRenaming(false)
         }
     }
+
+    // Polling logic for missing thumbnails
+    useEffect(() => {
+        // Only poll if we don't have a thumbnail AND the file is of a type that typically gets one
+        // mp3 doesn't get a thumbnail, but the generic type mapping maps mp3 to 'video' for preview purposes.
+        // We look at the actual original file extension or mime type if available, or just the db 'type' string.
+        const originalType = file?.type || type;
+        const isMp3 = originalType.includes("mp3") || originalType.includes("audio");
+
+        const needsThumbnail = !previewUrl && !isMp3 && (type === "image" || type === "video" || type === "pdf");
+
+        let intervalId: NodeJS.Timeout;
+        let attempts = 0;
+        const MAX_ATTEMPTS = 20;
+
+        if (needsThumbnail) {
+            intervalId = setInterval(async () => {
+                attempts++;
+                if (attempts >= MAX_ATTEMPTS) {
+                    clearInterval(intervalId);
+                    return;
+                }
+
+                try {
+                    const metadata: any = await getRequest(ENDPOINTS.files.metadata(id));
+                    if (metadata && metadata.thumbnail_url) {
+                        // Found it! Update the store and stop polling
+                        updateFileThumbnail(id, metadata.thumbnail_url);
+                        clearInterval(intervalId);
+                    }
+                } catch (error) {
+                    console.error("Failed to poll for thumbnail:", error);
+                }
+            }, 5000); // Check every 5 seconds
+        }
+
+        return () => {
+            if (intervalId) clearInterval(intervalId);
+        };
+    }, [id, previewUrl, type, file, updateFileThumbnail]);
     return (
         <>
             <div

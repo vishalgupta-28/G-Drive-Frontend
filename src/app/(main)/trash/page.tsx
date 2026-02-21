@@ -9,7 +9,7 @@ function mapDbTypeToFileType(dbType: string): FileType {
     switch (dbType) {
         case 'pdf': return 'pdf';
         case 'txt': case 'doc': return 'text';
-        case 'jpg': case 'png': return 'image';
+        case 'jpg': case 'png': case 'webp': return 'image';
         case 'mp4': case 'mp3': return 'video';
         default: return 'unknown';
     }

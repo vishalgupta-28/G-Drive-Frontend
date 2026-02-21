@@ -1,7 +1,7 @@
 "use client"
 
 import { useFileStore } from "@/store/fileStore"
-import { X, ExternalLink, Loader2 } from "lucide-react"
+import { X, ExternalLink, Loader2, AudioLines } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 
 export function FilePreviewModal() {
@@ -31,7 +31,7 @@ export function FilePreviewModal() {
             )
         }
 
-        if (type.includes("jpg") || type.includes("png") || type.includes("svg") || type.includes("image")) {
+        if (type.includes("jpg") || type.includes("png") || type.includes("webp") || type.includes("svg") || type.includes("image")) {
             return (
                 <div className="flex items-center justify-center w-full h-full p-8">
                     <img
@@ -51,6 +51,22 @@ export function FilePreviewModal() {
                         controls
                         autoPlay
                         className="max-w-full max-h-full outline-none"
+                    />
+                </div>
+            )
+        }
+
+        if (type.includes("mp3") || type.includes("audio")) {
+            return (
+                <div className="flex flex-col items-center justify-center w-full h-full p-8 bg-black/50">
+                    <div className="w-32 h-32 mb-8 bg-white/10 rounded-full flex items-center justify-center">
+                        <AudioLines className="w-16 h-16 text-white" />
+                    </div>
+                    <audio
+                        src={previewUrl}
+                        controls
+                        autoPlay
+                        className="w-full max-w-md outline-none"
                     />
                 </div>
             )
