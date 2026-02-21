@@ -45,7 +45,7 @@ const menuGroups = [
   [
     { title: "Shared with me", url: "/dashboard/shared", icon: Users },
     { title: "Recent", url: "/dashboard/recent", icon: Clock },
-    { title: "Starred", url: "/dashboard/starred", icon: Star },
+    { title: "Starred", url: "/starred", icon: Star },
   ],
   [
     { title: "Spam", url: "/dashboard/spam", icon: AlertCircle },
@@ -92,7 +92,7 @@ export function MainSidebar() {
                 {group.map((item) => {
                   const active = isActive(item.url)
                   const isStorageItem = item.title.startsWith("Storage");
-                  const isDisabled = ["MyDrive", "Computers", "Shared with me", "Recent", "Starred", "Spam"].includes(item.title);
+                  const isDisabled = ["MyDrive", "Computers", "Shared with me", "Recent", "Spam", "Storage"].includes(item.title);
 
                   const InnerContent = (
                     <div className={`flex items-center gap-[18px] ${item.hasArrow ? "pl-1 relative -left-1" : ""}`}>
@@ -137,9 +137,6 @@ export function MainSidebar() {
                           <p className="text-[14px] text-[#444746] dark:text-[#c4c7c5]">
                             {usedGB} GB of {totalGB} GB used
                           </p>
-                          <button className="mt-1 py-[8px] px-5 rounded-full border border-[#747775] bg-transparent hover:bg-black/5 dark:hover:bg-white/5 text-[#0b57d0] dark:text-[#f2b8b5] font-medium text-[14px] transition-colors w-max text-center">
-                            Get more storage
-                          </button>
                         </div>
                       )}
                     </div>

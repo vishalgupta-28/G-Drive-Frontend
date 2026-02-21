@@ -1,8 +1,8 @@
 "use client"
-import { FileCard, FileType } from "@/components/dashboard/grid/file-card"
-import { useTrashStore } from "@/store/trashStore"
+import { useStarredStore } from "@/store/starredStore"
 import { useEffect } from "react"
 import { Loader2 } from "lucide-react"
+import { FileCard, FileType } from "@/components/dashboard/grid/file-card"
 import Image from "next/image"
 
 function mapDbTypeToFileType(dbType: string): FileType {
@@ -15,16 +15,16 @@ function mapDbTypeToFileType(dbType: string): FileType {
     }
 }
 
-export default function TrashPage() {
-    const { trashedFiles, fetchTrash, isLoading, error, restoreFile, permanentDeleteFile } = useTrashStore()
+export default function StarredPage() {
+    const { starredFiles, fetchStarredFiles, isLoading, error } = useStarredStore()
 
     useEffect(() => {
-        fetchTrash()
-    }, [fetchTrash])
+        fetchStarredFiles()
+    }, [fetchStarredFiles])
 
     return (
-        <div className="flex-1 p-6 h-full bg-[#FFFFFF] dark:bg-black/70 rounded-lg overflow-y-auto">
-            <h2 className="text-[22px] font-normal text-foreground mb-6">Trash</h2>
+        <div className="flex-1 p-6 h-full bg-[#FFFFFF] dark:bg-black/70 rounded-lg overflow-y-auto w-full">
+            <h2 className="text-[22px] font-normal text-foreground mb-6">Starred</h2>
 
             <div className="mb-6">
                 {isLoading ? (
@@ -33,33 +33,31 @@ export default function TrashPage() {
                     </div>
                 ) : error ? (
                     <div className="text-sm text-red-500 bg-red-50 dark:bg-red-900/20 p-3 rounded-md">
-                        Failed to load trash: {error}
+                        Failed to load starred files: {error}
                     </div>
-                ) : trashedFiles.length === 0 ? (
+                ) : starredFiles.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-[500px] text-center w-full">
                         <Image
-                            src="/trash.svg"
-                            alt="Trash is empty"
+                            src="/star.svg"
+                            alt="No starred files"
                             width={300}
                             height={300}
                             className="mb-8"
                             priority
                         />
-                        <h3 className="text-[22px] font-normal text-[#1f1f1f] dark:text-[#e3e3e3] mb-3">Trash is empty</h3>
-                        <p className="text-[14px] text-[#444746] dark:text-[#c4c7c5]">Items moved to the trash will be deleted forever after 30 days</p>
+                        <h3 className="text-[22px] font-normal text-[#1f1f1f] dark:text-[#e3e3e3] mb-3">No starred files</h3>
+                        <p className="text-[14px] text-[#444746] dark:text-[#c4c7c5]">Add stars to things that you want to easily find later</p>
                     </div>
                 ) : (
                     <div className="flex flex-wrap gap-4">
-                        {trashedFiles.map((file) => (
+                        {starredFiles.map((file) => (
                             <FileCard
-                                isTrash={true}
                                 key={file.id}
                                 id={file.id}
                                 name={file.name}
                                 type={mapDbTypeToFileType(file.type)}
                                 previewUrl={file.thumbnail_url || undefined}
-                                onRestore={restoreFile}
-                                onDelete={permanentDeleteFile}
+                                is_starred={file.is_starred}
                                 file={file}
                             />
                         ))}

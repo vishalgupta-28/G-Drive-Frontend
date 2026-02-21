@@ -1,7 +1,7 @@
 "use client";
 
 // import { SidebarTrigger } from "../ui/sidebar";
-import { Search, SlidersHorizontal, Settings, LogOut, User } from "lucide-react";
+import { Search, X, Settings, LogOut, User } from "lucide-react";
 import Cookies from "js-cookie";
 import {
   DropdownMenu,
@@ -14,15 +14,35 @@ import {
 import { postRequest } from "@/server/methods";
 import { ENDPOINTS } from "@/server/endpoint";
 import { useAuthStore } from "@/store/authStore";
-import { useEffect } from "react";
-// import { ThemeToggle } from "@/components/theme-toggle"; // Toggle commented out as requested
+import { useFileStore } from "@/store/fileStore";
+import { useFolderStore } from "@/store/folderStore";
+import { useEffect, useState, useCallback } from "react";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function Navbar() {
   const { user, fetchUser, isLoading } = useAuthStore();
+  const { searchQuery, setSearchQuery, searchFiles, fetchFiles } = useFileStore();
+  const currentFolderId = useFolderStore(s => s.currentFolderId);
+
+  // For debouncing input
+  const [inputValue, setInputValue] = useState(searchQuery);
 
   useEffect(() => {
     fetchUser();
   }, [fetchUser]);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setSearchQuery(inputValue);
+      if (inputValue.trim() === "") {
+        fetchFiles(currentFolderId);
+      } else {
+        searchFiles(inputValue);
+      }
+    }, 300); // 300ms debounce
+
+    return () => clearTimeout(handler);
+  }, [inputValue, setSearchQuery, searchFiles, fetchFiles, currentFolderId]);
 
   // Fallback initial if user is loading or name is missing
   const initial = user?.name ? user.name.charAt(0).toUpperCase() : "U";
@@ -43,22 +63,27 @@ export default function Navbar() {
             type="text"
             placeholder="Search in Drive"
             className="flex-1 bg-transparent border-none outline-none px-2 text-[16px] text-black dark:text-[#e3e3e3] placeholder:text-[#444746] dark:placeholder:text-[#c4c7c5]"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
           />
 
-          <button className="h-11 w-11 flex items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10 shrink-0 text-[#1f1f1f] dark:text-[#c4c7c5] mr-1">
-            <SlidersHorizontal className="h-[20px] w-[20px] stroke-[1.5]" />
-          </button>
+          {inputValue && (
+            <button
+              onClick={() => setInputValue("")}
+              className="h-11 w-11 flex items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10 shrink-0 text-[#1f1f1f] dark:text-[#c4c7c5] mr-1"
+            >
+              <X className="h-[20px] w-[20px] stroke-[1.5]" />
+            </button>
+          )}
         </div>
       </div>
 
       <div className="flex items-center gap-2 min-w-[150px] justify-end">
-        <button className="h-10 w-10 flex items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-[#444746] dark:text-[#c4c7c5] transition-colors">
-          <Settings className="h-6 w-6 stroke-[1.5]" />
-        </button>
+        <ThemeToggle />
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="h-[34px] w-[34px] ml-1 rounded-full overflow-hidden hover:ring-4 hover:ring-black/5 dark:hover:ring-white/10 transition-all cursor-pointer bg-emerald-700 flex items-center justify-center border-none outline-none">
+            <button className="h-[34px] w-[34px] shrink-0 ml-1 rounded-full overflow-hidden hover:ring-4 hover:ring-black/5 dark:hover:ring-white/10 transition-all cursor-pointer bg-emerald-700 flex items-center justify-center border-none outline-none">
               {!isLoading && user?.profile_image ? (
                 <img src={user.profile_image} alt={user.name} className="w-full h-full object-cover" />
               ) : (
@@ -84,7 +109,7 @@ export default function Navbar() {
 
               {/* Avatar Section */}
               <div className="relative mb-4">
-                <div className="h-[84px] w-[84px] rounded-full overflow-hidden bg-emerald-700 flex items-center justify-center">
+                <div className="h-[84px] w-[84px] shrink-0 rounded-full overflow-hidden bg-emerald-700 flex items-center justify-center">
                   {!isLoading && user?.profile_image ? (
                     <img src={user.profile_image} alt={user.name} className="w-full h-full object-cover" />
                   ) : (
@@ -124,6 +149,6 @@ export default function Navbar() {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-    </header>
+    </header >
   );
 }
