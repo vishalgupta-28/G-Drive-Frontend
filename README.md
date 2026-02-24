@@ -19,11 +19,7 @@ bun dev
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ```
-# G-Drive Frontend
 
-**Live Demo:** [https://g-drive-frontend.onrender.com](https://g-drive-frontend.onrender.com/)
-
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 
 
